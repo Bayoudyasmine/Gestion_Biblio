@@ -10,7 +10,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_PAT')]) {
                 script {
-                    if (fileExists('library-management')) {
+                    if (fileExists('Gestion_Biblio')) {
                         dir('library-management') {
                             sh "git reset --hard" 
                             sh "git clean -fd" 
