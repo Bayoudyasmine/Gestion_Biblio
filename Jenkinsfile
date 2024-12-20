@@ -17,7 +17,7 @@ pipeline {
                             sh "git pull origin main"
                         }
                     } else {
-                        sh "git clone https://${GITHUB_PAT}@github.com/amja-do/library-management.git"
+                        sh "git clone https://${GITHUB_PAT}@github.com/Bayoudyasmine/library-management.git"
                     }
                 }
                 }
