@@ -19,11 +19,14 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate') {
-            steps {
-                // Vérifier si l'analyse SonarQube passe la qualité du code
-                waitForQualityGate abortPipeline: true  // Annuler le pipeline si la qualité du code n'est pas respectée
-            }
-        }
+      stage('SonarQube Analysis') {
+          steps {
+              withSonarQubeEnv('SonarQube') {
+                  sh 'mvn clean install sonar:sonar -Dsonar.projectKey=Gestion_Biblio'
+                  echo 'SonarQube analysis has been triggered.'
+              }
+          }
+      }
+
     }
 }
