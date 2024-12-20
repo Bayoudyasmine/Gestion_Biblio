@@ -1,32 +1,57 @@
 pipeline {
     agent any
     environment {
-        SONARQUBE = 'http://localhost:9000'  // L'adresse de votre serveur SonarQube
-        SONAR_TOKEN = 'squ_6d1a095cccb54760f3ebe7d3daa13c532892b38e'     // Le token d'authentification pour SonarQube
+        MAVEN_HOME = tool 'Maven'
+        SONAR_PROJECT_KEY = 'library-management'
+        SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
     }
     stages {
         stage('Checkout') {
             steps {
-                // Récupérer le code depuis GitHub
-                git 'https://github.com/Bayoudyasmine/Gestion_Biblio.git'
+                git url:'https://github.com/Bayoudyasmine/library-management.git' , branch:'main'
             }
         }
-        stage('SonarQube Analysis') {
+        stage('Build') {
             steps {
-                // Exécuter l'analyse SonarQube avec Maven ou le Scanner
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn clean install sonar:sonar -Dsonar.projectKey=Gestion_Biblio'  // Utiliser le scanner si vous ne travaillez pas avec Maven
+                sh '${MAVEN_HOME}/bin/mvn clean compile'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh '${MAVEN_HOME}/bin/mvn test'
+            }
+        }
+        stage('Quality Analysis') {
+            steps {
+            withCredentials([string(credentialsId:'	sonar-token',variable:'	sonar-token')]){
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                        ${MAVEN_HOME}/bin/mvn clean verify sonar:sonar\
+                          -Dsonar.projectKey=library-management \
+                          -Dsonar.projectName='library-management' \
+                          -Dsonar.host.url=http://host.docker.internal:9000 \
+                          -Dsonar.token=sqp_77184bb20899618f745968eb22c6533d43755af1
+                        """
+                    }
                 }
             }
         }
-      stage('SonarQube Analysis') {
-          steps {
-              withSonarQubeEnv('SonarQube') {
-                  sh 'mvn clean install sonar:sonar -Dsonar.projectKey=Gestion_Biblio'
-                  echo 'SonarQube analysis has been triggered.'
-              }
-          }
-      }
-
+        stage('Deploy') {
+            steps {
+                echo 'Déploiement simulé réussi'
+            }
+        }
+    }
+    post {
+        success {
+            mail to: 'bayoud.yas@gmail.com',
+                subject: 'Build Success',
+                body: 'Le build a été complété avec succès.'
+        }
+        failure {
+            mail to: 'bayoud.yas@gmail.com',
+                subject: 'Build Failed',
+                body: 'Le build a échoué.'
+        }
     }
 }
