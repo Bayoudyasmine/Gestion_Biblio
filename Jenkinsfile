@@ -1,75 +1,29 @@
 pipeline {
     agent any
-
     environment {
-        SONARQUBE_URL = 'http://localhost:9000'
-        SONARQUBE_TOKEN = credentials('sonarqube-token') // Utiliser le token enregistré dans Jenkins
+        SONARQUBE = 'http://localhost:9000'  // L'adresse de votre serveur SonarQube
+        SONAR_TOKEN = 'squ_6d1a095cccb54760f3ebe7d3daa13c532892b38e'     // Le token d'authentification pour SonarQube
     }
-
     stages {
         stage('Checkout') {
             steps {
-                // Récupérer le code source du dépôt Git
-                checkout scm
+                // Récupérer le code depuis GitHub
+                git 'https://github.com/Bayoudyasmine/Gestion_Biblio.git'
             }
         }
-
-        stage('Build') {
-            steps {
-                // Construire le projet (par exemple avec Maven ou Gradle)
-                script {
-                    // Exemple pour Maven
-                    sh 'mvn clean install'
-
-                    // Si vous utilisez Gradle, vous pouvez remplacer par :
-                    // sh './gradlew build'
-                }
-            }
-        }
-
         stage('SonarQube Analysis') {
             steps {
-                // Analyser le projet avec SonarQube
-                script {
-                    // Vérifier que SonarScanner est bien installé dans Jenkins
-                    sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=Gestion_Biblio \
-                    -Dsonar.sources=src \
-                    -Dsonar.host.url=$SONARQUBE_URL \
-                    -Dsonar.login=$SONARQUBE_TOKEN
-                    '''
+                // Exécuter l'analyse SonarQube avec Maven ou le Scanner
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn clean install sonar:sonar -Dsonar.projectKey=Gestion_Biblio'  // Utiliser le scanner si vous ne travaillez pas avec Maven
                 }
             }
         }
-
-        stage('Test') {
+        stage('Quality Gate') {
             steps {
-                // Exécuter les tests unitaires
-                script {
-                    // Exemple pour Maven
-                    sh 'mvn test'
-
-                    // Si vous utilisez Gradle, vous pouvez remplacer par :
-                    // sh './gradlew test'
-                }
+                // Vérifier si l'analyse SonarQube passe la qualité du code
+                waitForQualityGate abortPipeline: true  // Annuler le pipeline si la qualité du code n'est pas respectée
             }
-        }
-
-        stage('Deploy') {
-            steps {
-                // Déployer l'application
-                sh 'scp target/monapp.jar user@serveur:/chemin/deploiement'
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Le build, l\'analyse et les tests ont réussi.'
-        }
-        failure {
-            echo 'Le build ou l\'analyse SonarQube a échoué.'
         }
     }
 }
