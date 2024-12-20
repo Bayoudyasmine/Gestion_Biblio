@@ -11,7 +11,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_PAT')]) {
                 script {
                     if (fileExists('Gestion_Biblio')) {
-                        dir('library-management') {
+                        dir('Gestion_Biblio') {
                             sh "git reset --hard" 
                             sh "git clean -fd" 
                             sh "git pull origin main"
