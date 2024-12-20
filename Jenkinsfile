@@ -1,68 +1,75 @@
 pipeline {
     agent any
+
     environment {
-        MAVEN_HOME = tool 'Maven'
-        SONAR_PROJECT_KEY = 'library-management'
-		SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
+        SONARQUBE_URL = 'http://localhost:9000'
+        SONARQUBE_TOKEN = credentials('sonarqube-token') // Utiliser le token enregistré dans Jenkins
     }
+
     stages {
-        stage('checkout') {
+        stage('Checkout') {
             steps {
-                withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_PAT')]) {
-                script {
-                    if (fileExists('Gestion_Biblio')) {
-                        dir('Gestion_Biblio') {
-                            sh "git reset --hard" 
-                            sh "git clean -fd" 
-                            sh "git pull origin main"
-                        }
-                    } else {
-                        sh "git clone https://${GITHUB_PAT}@github.com/Bayoudyasmine/library-management.git"
-                    }
-                }
-                }
+                // Récupérer le code source du dépôt Git
+                checkout scm
             }
         }
+
         stage('Build') {
             steps {
-                sh '${MAVEN_HOME}/bin/mvn clean compile'
+                // Construire le projet (par exemple avec Maven ou Gradle)
+                script {
+                    // Exemple pour Maven
+                    sh 'mvn clean install'
+
+                    // Si vous utilisez Gradle, vous pouvez remplacer par :
+                    // sh './gradlew build'
+                }
             }
         }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // Analyser le projet avec SonarQube
+                script {
+                    // Vérifier que SonarScanner est bien installé dans Jenkins
+                    sh '''
+                    sonar-scanner \
+                    -Dsonar.projectKey=Gestion_Biblio \
+                    -Dsonar.sources=src \
+                    -Dsonar.host.url=$SONARQUBE_URL \
+                    -Dsonar.login=$SONARQUBE_TOKEN
+                    '''
+                }
+            }
+        }
+
         stage('Test') {
             steps {
-                sh '${MAVEN_HOME}/bin/mvn test'
+                // Exécuter les tests unitaires
+                script {
+                    // Exemple pour Maven
+                    sh 'mvn test'
+
+                    // Si vous utilisez Gradle, vous pouvez remplacer par :
+                    // sh './gradlew test'
+                }
             }
         }
-        stage('Quality Analysis') {
-            steps {
-				withCredentials([string(credentialsId: 'SonarQube-library-management-token', variable: 'SONAR_TOKEN')]) {
-				   
-					withSonarQubeEnv('SonarQube') {
-						sh """
-                             mvn sonar:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.login=${SONAR_TOKEN}
-                    	"""
-					}	
-				}
-			}
-        }
+
         stage('Deploy') {
             steps {
-                echo 'Déploiement simulé réussi'
+                // Déployer l'application (si nécessaire)
+                sh 'scp target/monapp.jar user@serveur:/chemin/deploiement'
             }
         }
     }
+
     post {
         success {
-            mail to: '@gmail.com',
-                subject: 'Build Success',
-                body: 'Le build a été complété avec succès.'
+            echo 'Le build, l\'analyse et les tests ont réussi.'
         }
         failure {
-            mail to: '@gmail.com',
-                subject: 'Build Failed',
-                body: 'Le build a échoué.'
+            echo 'Le build ou l\'analyse SonarQube a échoué.'
         }
     }
 }
