@@ -58,7 +58,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Déployer l'application (si nécessaire)
+                // Déployer l'application
                 sh 'scp target/monapp.jar user@serveur:/chemin/deploiement'
             }
         }
